@@ -1,7 +1,6 @@
 # Alkanes GC-FID Data Import and Analysis
-# V0
 # Jack A Hutchings, jackh@wustl.edu
-# 2018.12.03
+# 2019.06.12
 
 # Please double check the parameters sheet of the processing template to ensure the variables
 # match the values used in your extraction procedure.
@@ -17,11 +16,11 @@ library(readxl)
 library(writexl)
 
 #You'll need to set your working directory to wherever your data are!
-setwd("C:/Box Sync/Konecky Lab/Data/GCFID Exports/2019_04_16_SNY18 Alkanes Batch 2")
+setwd()
 
 rm(list=ls())
 
-input <- "Konecky Lab - GC-FID Alkanes Processing Template v0.xlsx"
+input <- "GC-FID Alkanes Processing Template.xlsx"
 raw_data <- list(gcfid = read_excel(input,sheet=2,na="N/A"),
                  calib = read_excel(input,sheet=4),
                  mix.std = read_excel(input,sheet = 3)[,1:2],

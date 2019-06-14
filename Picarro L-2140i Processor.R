@@ -17,6 +17,11 @@ rm(list=ls())
 }
 
 # STEP 1: Save this script in the same directory as the Private Data .zip files and the matching Piccaro_Tray_Sheet.
+# STEP 2: Provide your name or initials! This will be attached to various output files.
+vars$username = "JAH"
+# STEP 3: Execute the script in order. User-defined options are confined to the 'vars' object, which is in-line with the code
+#         near where the user-defined option is relevant. In general, you should not need to change these, but do pay attention
+#         just in case!
 
 # Sets the working directory to the script location
 directory = dirname(rstudioapi::getActiveDocumentContext()$path)
@@ -107,7 +112,7 @@ data_pulse_peaks_2 <- data_pulse_peaks %>% filter(start_peak==T) %>%
          flag = ifelse(start_peak_index == 1,"Good",flag)) #The first peak often has strange timing, so it is always flagged 'Good' 
 
 peak_flag_override = c() #Enter the 'start_peak_index' from data_pulse_peaks_2 of any peak flagged as Bad that is actually good.
-#This should only be necessary when there has been instrument failure.
+# This should only be necessary when there has been instrument failure, but other things (Daylight Savings) can sometimes be a problem.
 
 data_pulse_peaks_3 <- data_pulse_peaks_2 %>%
   mutate(flag = ifelse(start_peak_index %in% peak_flag_override,"Good",flag)) %>% 
@@ -119,11 +124,7 @@ data_pulse_peaks_3 <- data_pulse_peaks_2 %>%
          end_peak_time = datetime + minutes(mean_minutes) + seconds(mean_seconds)) %>%  # Ending peak time based on average peak-to-peak duration
   select(datetime,end_peak_time,interval,start_peak_index)
 
-# # Daylight Savings Fudging Happening Here
-# data_pulse_peaks_2 <- data_pulse_peaks_2 %>% 
-#   mutate(end_peak_time = as.POSIXct(ifelse(is.na(end_peak_time),
-#                                 datetime[which(start_peak_index==167)] - minutes(1),
-#                                 end_peak_time),origin="1970-01-01",tz='CST6CDT'))
+
 
 
 data_pulse_peaks_4 <- full_join(data_pulses,data_pulse_peaks_3,by = "datetime") %>% #rejoin with the pulses data
@@ -152,6 +153,8 @@ data_pulse_peaks_4 <- full_join(data_pulses,data_pulse_peaks_3,by = "datetime") 
 # to increase or decrease the sentivitity to finding peak tops, depending on your problem.
 # You'll then need to re-run the code starting from line 33 (where the 'data' object is created)
 
+# To troubleshoot, the chunk of code after this plot allows you to plot specific peaks, which can help find problems...
+
 vars <- vars %>% 
   mutate(plot_start_adjust = 1, #Number of hours before the first detected injection to plot. Set this to -Inf to plot from the beginning.
          plot_end_adjust = 1, #Number of hours after the last detected injection to plot. Set this to Inf to plot until the end.
@@ -176,10 +179,33 @@ ggplot(data_pulse_peaks_4 %>% ungroup() %>% select(peak_number,is_peak,mean_date
   scale_x_datetime(breaks = "4 hour", date_labels = "%b %d\n%I %p") +
   theme(axis.text.x = element_text(angle=0))
 
+# Uncomment the following code and enter a peak number in vars$peak_to_plot. This will plot an hour of measurements centered on that peak.
+# Useful for troubleshooting, but not necessary under normal conditions.
+{
+  # vars$peak_to_plot = 10
+  # 
+  # ggplot(data_pulse_peaks_4 %>% ungroup() %>% select(peak_number,is_peak,mean_datetime,datetime,H2O,d18O) %>% gather(var,val,H2O,d18O) %>% 
+  #          filter(datetime > (mean_datetime[which(peak_number == vars$peak_to_plot)][1] - (30*60)) & 
+  #                 datetime < (mean_datetime[which(peak_number == vars$peak_to_plot)][1] + (30*60))) %>% 
+  #          mutate(remove_point = rep(seq(from = 1, to = vars$resolution_factor, by=1),length.out=n())) %>% 
+  #          filter(remove_point == vars$resolution_factor),
+  #        aes(x=datetime,y=val)) +
+  #   geom_path(aes(color=is_peak,group=1)) +
+  #   geom_text(data=data_pulse_peaks_4  %>% select(datetime,mean_datetime,is_peak,peak_number,H2O,d18O) %>%
+  #               gather(var,val,H2O,d18O) %>% group_by(var) %>%
+  #               filter(datetime > (mean_datetime[which(peak_number == vars$peak_to_plot)][1] - (30*60)) & 
+  #                        datetime < (mean_datetime[which(peak_number == vars$peak_to_plot)][1] + (30*60))) %>% 
+  #               mutate(val = max(val[which(is_peak==T)])+abs(max(val[which(is_peak==T)]))*0.2) %>% select(is_peak,val,var,mean_datetime,peak_number) %>%
+  #               distinct() %>% na.omit() %>% 
+  #               filter(mean_datetime > (min(mean_datetime,na.rm=T)-(3600*vars$plot_start_adjust)) & 
+  #                        mean_datetime < (max(mean_datetime,na.rm=T)+(3600*vars$plot_end_adjust))),
+  #             aes(x=mean_datetime,y=val,label=peak_number),size=3,angle=90) +
+  #   facet_wrap(~var,ncol=1,scales="free_y") +
+  #   scale_x_datetime(breaks = "4 hour", date_labels = "%b %d\n%I %p") +
+  #   theme(axis.text.x = element_text(angle=0))
+}
 
-
-
-start_pulse = 1 #Identify the first pulse in your run here!
+vars$start_pulse = 1 #Identify the first pulse in your run here!
 
 
 # Read in and re-format your tray data
@@ -189,15 +215,7 @@ tray_info <- read_excel("Picarro_Tray_Sheet.xlsx",sheet=1)[,1:4] %>% na.omit() %
   mutate(injection = list(c(1:injections))) %>% 
   unnest() %>% 
   ungroup() %>% 
-  mutate(peak_number = (1:n())-1+start_pulse)
-
-# Accepted Values for Standards
-standards <- data.frame(sample     = c( "VSMOW2" , "SLAP2" , "USGS45" , "USGS53" ),
-                        d18O_known = c( 0        , -55.5   , -2.24    , 5.47     ),
-                        dD_known   = c( 0        , -427.5  , -10.3    , 40.2     ),
-                        d17O_known = c( 0        , -29.6986, -1.1703  , NA       ),
-                        dxs_known  = c( 0        ,  16     ,  7.6     , -3.56    ),
-                        D17O_known = c( 0        ,  0      ,  12      , NA       ))
+  mutate(peak_number = (1:n())-1+vars$start_pulse)
 
 # Join tray info and pulses by peak_number
 # This output file should be considered 'raw'

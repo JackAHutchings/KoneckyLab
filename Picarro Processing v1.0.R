@@ -1,6 +1,9 @@
 #Konecky Lab - Picarro Data Processing Version 1.0
 rm(list=ls())
 {
+  ### Uncomment the two lines below to install the required packages for this script. They only need to be installed once.
+  # install.packages(c("dplyr","tidyr","ggplot2","readxl","writexl","zoo","lubridate","rstudioapi","BiocManager","bit64"))
+  # BiocManager::install("rhdf5") # Required to deal with Picarro's data format  
   require(dplyr)
   require(tidyr)
   require(ggplot2)
@@ -9,39 +12,34 @@ rm(list=ls())
   require(writexl)
   require(zoo)
   require(lubridate)
-  # BiocManager::install("rhdf5")
   require(rhdf5)
+  require(rstudioapi)
 }
 
+# STEP 1: Save this script in the same directory as the Private Data .zip files and the matching Piccaro_Tray_Sheet.
 
 # Sets the working directory to the script location
 directory = dirname(rstudioapi::getActiveDocumentContext()$path)
 setwd(directory)
 
-#Extract all zip files in your working directory, but only if no h5 files already exist
-if(length(list.files(path=paste(directory,"/rawdata",sep=""),pattern=".h5")) == 0){sapply(list.files(pattern=".zip"),FUN=unzip,exdir=paste(directory,"/rawdata",sep=""),junkpaths=T)}
-
 #Extract  all the data from each Picarro h5 file and combine into the 'rawdata' object
 {
-  if(length(list.files(pattern="rawdata.csv")) == 1){rawdata = read.csv("rawdata.csv")}
-  if(length(list.files(pattern="rawdata.csv")) == 0){
-    setwd(paste(directory,"/rawdata",sep=""))
-    files <- list.files(pattern=".h5")
-    rawdata = data.frame()
+    sapply(list.files(pattern=".zip"),FUN=unzip,junkpaths=T) # Unzips the h5 files
+    files <- list.files(pattern=".h5") # Generate a list of the h5 files
+    rawdata = data.frame() # Initiate the rawdata object
     for( i in unique(files)) {
-      temp_data <- h5read(file=i,
-                          name="results",
-                          bit64conversion='bit64')
-      rawdata = rbind(rawdata,temp_data)
+      temp_data <- h5read(file=i,name="results",bit64conversion='bit64') # Reads a single h5 files
+      rawdata = rbind(rawdata,temp_data) # Append the h5 file to the rawdata object
     }
     rm(temp_data)
-    setwd(directory)
-    write.csv(rawdata,"rawdata.csv",row.names=F)
-  }
+    unlink(files) # Deletes the unzipped h5 files.
+    # write.csv(rawdata,"rawdata.csv",row.names=F) # If you want the rawdata as a csv for some reason, uncomment this line. Be warned, the raw CSV will be ~600 mb.
 }
+
 # New Data Frame with new variables
 # All isotope delta values (and derivative metrics) are based on on the apparent R of a VSMOW2 series of injections made previously.
 # These need to be properly scale normalized to SMOW-SLAP using the standards from this run.
+
 data <- rawdata %>% 
   mutate(ref.rD = 0.148605440565915,   #      Observed R of VSMOW2 for the Konecky Lab L2140-i from 2018-12-17
          ref.r17O = 0.589386241299641, #      Observed R of VSMOW2 for the Konecky Lab L2140-i from 2018-12-17
@@ -73,12 +71,12 @@ vars <- data.frame(h2o_threshold_lower = 7500, #ppm of H2O to reach before looki
                    peak_start_trim = 30, #number of scans at the start of a peak to drop
                    peak_end_trim = 20, #number of scans at the end of a peak to drop
                    short_integration = 180, #count of scans (aka seconds) to use for short integrations
-                   peak_interval_sd_threshold = 4, #How many standard deviations from the mean peak-to-peak interval to use to flag false positives?
+                   peak_interval_sd_threshold = 5, #How many standard deviations from the mean peak-to-peak interval to use to flag false positives?
                    residual_threshold = 2, #Flag samples with values greater than this many standard deviations away from standard injections.
                    baseline_shift_threshold = 18, #Flag samples with values greater than this many standard deviations away from standard injections.
                    baseline_curvature_threshold = 3, #Flag samples with values greater than this many standard deviations away from standard injections.
                    dxs_threshold = 0 #Flag samples with deuterium excess values below this value, typically indicative of vial evaporation.
-                   )
+)
 
 data_pulses <- data %>% filter(ValveMask>1) %>% #filter the data for when the vaporizer valve is set introducing an injection
   mutate(scan_num = 1:n()) #create an index of scans
@@ -104,12 +102,12 @@ data_pulse_peaks_2 <- data_pulse_peaks %>% filter(start_peak==T) %>%
   mutate(mean_interval = mean(interval,na.rm=T), #Average peak-to-peak interval
          sd_interval = sd(interval,na.rm=T), #SD of peak-to-peak interval
          flag = ifelse(interval < mean_interval-(vars$peak_interval_sd_threshold*sd_interval) | 
-                       interval > mean_interval+(vars$peak_interval_sd_threshold*sd_interval),
+                         interval > mean_interval+(vars$peak_interval_sd_threshold*sd_interval),
                        "Bad","Good"), #Flags peaks with >2 SD peak-to-peak intervals
          flag = ifelse(start_peak_index == 1,"Good",flag)) #The first peak often has strange timing, so it is always flagged 'Good' 
 
 peak_flag_override = c() #Enter the 'start_peak_index' from data_pulse_peaks_2 of any peak flagged as Bad that is actually good.
-                        #This should only be necessary when there has been instrument failure.
+#This should only be necessary when there has been instrument failure.
 
 data_pulse_peaks_3 <- data_pulse_peaks_2 %>%
   mutate(flag = ifelse(start_peak_index %in% peak_flag_override,"Good",flag)) %>% 
@@ -158,11 +156,11 @@ vars <- vars %>%
   mutate(plot_start_adjust = 1, #Number of hours before the first detected injection to plot. Set this to -Inf to plot from the beginning.
          plot_end_adjust = 1, #Number of hours after the last detected injection to plot. Set this to Inf to plot until the end.
          resolution_factor = 8 #Reduces the resolution of the plot below as a multiple of this factor. Makes plotting faster.
-         )
+  )
 
 ggplot(data_pulse_peaks_4 %>% ungroup() %>% select(peak_number,is_peak,mean_datetime,datetime,H2O,d18O) %>% gather(var,val,H2O,d18O) %>% 
          filter(datetime > (min(mean_datetime,na.rm=T)-(3600*vars$plot_start_adjust)) & 
-                datetime < (max(mean_datetime,na.rm=T)+(3600*vars$plot_end_adjust))) %>% 
+                  datetime < (max(mean_datetime,na.rm=T)+(3600*vars$plot_end_adjust))) %>% 
          mutate(remove_point = rep(seq(from = 1, to = vars$resolution_factor, by=1),length.out=n())) %>% 
          filter(remove_point == vars$resolution_factor),
        aes(x=datetime,y=val)) +
@@ -251,7 +249,7 @@ injection_level_results_raw <- pulse_level_results %>%
             baselineshift_mean = mean(baseline_shift), # Spectral baseline shift, used for organics flagging
             baselinecurvative_mean = mean(baseline_curvature), # Spectral baseline curvature based on a quadratic fit, used for organics flagging
             slopeshift_mean = mean(slope_shift) # Slope of the spectral baseline, used for organics flagging (unclear on proper threshold currently)
-            ) %>% 
+  ) %>% 
   ungroup() %>% mutate(run_n = seq(1:n()))
 
 # This calculates 'fmem' or the contribution of the current injection to the observed signal. 1-fmem is equal to the contribution of the previous vial.
@@ -440,9 +438,9 @@ cal_plot <- vial_level_results %>%
   separate(variable,c("variable","type"),sep="_",extra="drop") %>%
   spread(type,value)
 
+
 ggplot(cal_plot,aes(x=mean,y=known)) +
   geom_point() + 
-  # geom_text(aes(label=vial_meaninject)) +
   facet_wrap(~variable,scales="free") +
   geom_smooth(se=F,method='lm')
 
@@ -587,14 +585,12 @@ qaqc_tracking <- vial_level_results %>%
 
 # Data Export
 
-# All pulse peaks
+# Uncalibrated Raw pulse peaks
 write.csv(pulse_level_results,paste(rundate,"_pulses.csv",sep=""),row.names=F)
-# Injection level data
+# Uncalibrated Injection level data
 write.csv(injection_level_results,paste(rundate,"_injections.csv",sep=""),row.names=F)
-# Vial level data
+# Uncalibrated Vial level data
 write.csv(vial_level_results,paste(rundate,"_vials.csv",sep=""),row.names=F)
-# USGS45 Calibrated Data
-write.csv(calibrated_control,paste(rundate,"_controls.csv",sep=""),row.names=F)
 # Calibrated Sample Data
 write_xlsx(calibrated_samples,paste(rundate,"_CorrectedSamples.xlsx",sep=""))
 # Calibrated Sample Report
@@ -606,30 +602,35 @@ qaqc_master <- read_excel("QAQC Tracking.xlsx") %>%
   rbind(qaqc_tracking) %>% distinct()
 write_xlsx(qaqc_master,"QAQC Tracking.xlsx")
 
+
+#####                                                                         #####
+##### Below are option/diagnostic plots of your data. Feel free to stop here! #####
+#####                                                                         #####
+
 # GMWL Plot of Samples
 {
-  # ggplot(calibrated_samples %>% select(sample,variable,'Corrections: Drift & Calibrated') %>%
-  #          spread(variable,'Corrections: Drift & Calibrated') %>% .[,c(1,2,4)] %>%
-  #          setnames(.,c("sample","d18O","dD")),aes(x=d18O,y=dD)) +
-  #   geom_point() +
-  #   geom_abline(aes(slope=8.2,intercept=11.27))
-  # 
-  # ggplot(calibrated_samples %>% select(sample,variable,'Corrections: Drift & Calibrated') %>%
-  #          spread(variable,'Corrections: Drift & Calibrated') %>% .[,c(1,2,4,5,6)] %>%
-  #          setnames(.,c("sample","d18O","dD","D_Excess","D17O")),
-  #        aes(x=D_Excess,y=D17O)) +
-  #   geom_point()
+  ggplot(calibrated_samples %>% select(sample,variable,'Corrections: Drift & Calibrated') %>%
+           spread(variable,'Corrections: Drift & Calibrated') %>% .[,c(1,2,4)] %>%
+           setnames(.,c("sample","d18O","dD")),aes(x=d18O,y=dD)) +
+    geom_point() +
+    geom_abline(aes(slope=8.2,intercept=11.27))
+
+  ggplot(calibrated_samples %>% select(sample,variable,'Corrections: Drift & Calibrated') %>%
+           spread(variable,'Corrections: Drift & Calibrated') %>% .[,c(1,2,4,5,6)] %>%
+           setnames(.,c("sample","d18O","dD","D_Excess","D17O")),
+         aes(x=D_Excess,y=D17O)) +
+    geom_point()
 }
 # Plot to look at a single pulse for demo purposes...
 {
-  single_pulse_plot <- ggplot(data_pulse_peaks_3 %>% ungroup() %>% select(peak_number,is_peak,mean_datetime,datetime,H2O,d18O,dD,D17O) %>%
-           mutate(D17O = D17O*1000) %>%
-           gather(var,val,H2O:D17O) %>%
-           filter(datetime > (min(mean_datetime,na.rm=T)+(3600*1.1)) &
-                    datetime < (min(mean_datetime,na.rm=T)+(3600*1.3))) %>%
-           mutate(var_label = factor(var,levels=c("H2O","d18O","dD","D17O"),ordered=T,
-                                     labels=c("H2O (ppm)","\u03B4\u00B9\u2078O (mUr)","\u03B4D (mUr)","\u0394\u00B9\u2077O (\u03BCUr)"))),
-         aes(x=datetime,y=val)) +
+  single_pulse_plot <- ggplot(data_pulse_peaks_4 %>% ungroup() %>% select(peak_number,is_peak,mean_datetime,datetime,H2O,d18O,dD,D17O) %>%
+                                mutate(D17O = D17O*1000) %>%
+                                gather(var,val,H2O:D17O) %>%
+                                filter(datetime > (min(mean_datetime,na.rm=T)+(3600*1.1)) &
+                                         datetime < (min(mean_datetime,na.rm=T)+(3600*1.3))) %>%
+                                mutate(var_label = factor(var,levels=c("H2O","d18O","dD","D17O"),ordered=T,
+                                                          labels=c("H2O (ppm)","\u03B4\u00B9\u2078O (permil)","\u03B4D (permil)","\u0394\u00B9\u2077O (permeg)"))),
+                              aes(x=datetime,y=val)) +
     geom_path(aes(color=is_peak,group=1)) +
     facet_wrap(~var_label,ncol=1,scales="free_y",strip.position="left") +
     scale_x_datetime(breaks = "5 min",date_labels = "%I:%M") +
@@ -637,29 +638,9 @@ write_xlsx(qaqc_master,"QAQC Tracking.xlsx")
           strip.text.y = element_text(angle=180),
           legend.position = "none") +
     labs(y=NULL,x="Time")
-  ggsave("single_pulse_plot.png",single_pulse_plot,width=150,height=125)
+  ggsave("single_pulse_plot.png",single_pulse_plot,width=150,height=125,units="mm")
 }
-# Code to use Python to handle the h5 Picarro files
-{
-  #   require(reticulate) # Note that this requires Python be installed already and that the h5py, numpy, and rpy2 modules are already installed
-  #   
-  #   h5py <- import("h5py")
-  #   np <- import("numpy")
-  #   rpy2 <- import("rpy2")
-  #   files <- list.files(pattern=".h5")
-  #   headers <- as.data.frame(h5py$File(files[1])['results']$dtype$names,stringsAsFactors = F) %>% 
-  #     gather(key,header) %>% .$header
-  # if(length(list.files(pattern="rawdata.csv")) == 0) {
-  #   py_run_string("import numpy as np; f=open('rawdata.csv','a')")
-  #   for( i in unique(files)) {
-  #     temp_data = h5py$File(i)['results']
-  #     np$savetxt(py$f,temp_data,delimiter=',')
-  #   }
-  #   py_run_string("f.close()")
-  # }
-  # 
-  # rawdata <- read.csv("rawdata.csv",col.names = headers)
-}
+
 # Code to produce a memory coefficient plot
 {
   require(broom)
@@ -677,10 +658,10 @@ write_xlsx(qaqc_master,"QAQC Tracking.xlsx")
     ungroup() %>% select(variable,injection,fmem_mean) %>%
     mutate(variable=factor(variable,levels=c("d18O_mean","d17O_mean","dD_mean_short"),ordered=T,
                            labels=c("\u03B4\u00B9\u2078O (\u2030)","\u03B4\u00B9\u2077O (\u2030)","\u03B4D (\u2030)")))
-
+  
   fmem_plot <- ggplot(fmem_terms %>% ungroup() %>% mutate(variable=factor(variable,levels=c("d18O_mean","d17O_mean","dD_mean_short"),ordered=T,
-                                               labels=c("\u03B4\u00B9\u2078O (\u2030)","\u03B4\u00B9\u2077O (\u2030)","\u03B4D (\u2030)"))),
-         aes(x=(injection))) +
+                                                                          labels=c("\u03B4\u00B9\u2078O (\u2030)","\u03B4\u00B9\u2077O (\u2030)","\u03B4D (\u2030)"))),
+                      aes(x=(injection))) +
     geom_point(aes(y=fmem_mean*100),size=0.25) +
     geom_errorbar(aes(ymin = (fmem_mean-fmem_sd)*100, ymax = (fmem_mean+fmem_sd)*100),width=0.25,size=0.25) +
     geom_line(data=fmem_curve,aes(y=fmem_mean*100),size=0.25) +

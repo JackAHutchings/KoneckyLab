@@ -1,4 +1,4 @@
 # Table of contents
 
-* [Initial page](README.md)
+* [Climate & Paleoclimate Laboratory at WashU](README.md)
 

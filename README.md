@@ -1,4 +1,4 @@
-# Climate & Paleoclimate Laboratory at WashU
+# Laboratory Handbook
 
 ### MISSION STATEMENT
 

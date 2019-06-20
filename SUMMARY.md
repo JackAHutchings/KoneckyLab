@@ -1,4 +1,4 @@
 # Table of contents
 
-* [Climate & Paleoclimate Laboratory at WashU](README.md)
+* [Laboratory Handbook](README.md)
 

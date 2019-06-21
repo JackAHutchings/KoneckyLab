@@ -5,7 +5,7 @@ description: >-
   book' signed before doing any lab work!
 ---
 
-# Lab Safety Training
+# Lab Specific Safety Training
 
 #### I.       Food and Drink Transport Policy
 
@@ -17,6 +17,7 @@ description: >-
 
 * Practically all organic solvents used by our lab are flammable!
 * Acids and bases in solution are typically corrosive. Many bases when dry \(e.g., dry sodium hydroxide\) are not considered corrosive, but should still be handled with use of personal protective equipment \(PPE\).
+* When mixing acids with water, always add **acid into water**! The protonation of water is a highly exothermic reaction. If you add water to an acid \(especially a concentrated, strong acid\), then the small amount of water you are pouring is likely to flash boil and eject concentrated acid out of the container. Remember this mnemonic: _Do like an otter, add acid to water._
 * Remove and replace your gloves any time you suspect a chemical might have come into contact with them.
 * Acetyl chloride \(stored within a glass desiccator\) reacts with water to produce hydrochloric acid and acetic acid, including water in your membranes! This should only be handled during preparation of anhydrous methanolic hydrochloric acid for fatty acid esterification and only within a fume hood, with PPE, and after training and approval by Bronwen or Jack.
 
@@ -31,9 +32,13 @@ description: >-
 #### V.     Use of a chemical fume hood
 
 * All wet chemical work should, by default, be performed within a fume hood. Rare exceptions should be cleared with Jack or Bronwen.
+* Fume hoods operated by pulling air from the laboratory into the fume hood \(and, ultimately, into the atmosphere above the building\).
+* An alarm will sound if the fume hood stops operating or if the hood door \(the 'sash'\) is opened past the safe flow level, typically about half-way up.
+* When working with a fume hood, you must keep your face **outside** of the hood area to avoid breathing fumes. Especially volatile solvents \(e.g., diethyl ether used during acid/neutral TLE separation\) can escape the fume hood. If you smell **any** chemical, lower the fume hood. Your sense of smell can quickly become saturated and you will not notice further exposure to the fumes until you lose consciousness.
 
 #### VI.   Use of gas cylinders
 
+* You must receive direct training from Jack or Bronwen prior to manipulating any gas cylinder or regulator.
 * When installing a new cylinder, remove the ‘Full’ part of its tag. After installing the regulator, open the cylinder’s valve and note the pressure on its tag.
 * Even if the cylinder appears empty, close the main valve prior to removing the regulator. When empty, remove the “Partially Full” tag and, if necessary, indicate the pressure of the remaining contents.
 * H2 is kept in a special cabinet in 252 because H2 gas is extremely explosive when mixed with air. The cabinet is equipped with a hydrogen detector, alarm, and pneumatic shut-off valve, and the cabinet itself is plumbed into the building’s ventilation system. If a H2 leak is detected, a loud alarm will sound \(audible from anywhere in the 2nd floor hallway\) and the valve will automatically close, containing the leak. The alarm will continue to sound until it has been manually reset. If you hear an alarm, stop working and leave the laboratory, and notify Bronwen and Jack immediately.
@@ -64,6 +69,7 @@ description: >-
 * Close-toed shoes are required at all times.
 * When possible, wear loose-fitting, long pants.
 * Tie back long hair, both for safety and to avoid potential contamination.
+* Do not wear clothing that you would not be comfortable with getting stained or otherwise damaged due to contact with chemicals.
 
 #### XII.   Thermal hazards
 
@@ -71,7 +77,17 @@ description: >-
 
 #### XIII.   Disposal of hazardous materials
 
-* Hazardous waste collection vessels should all have a completed “Unwanted Material” label.
+* Hazardous waste collection vessels should all have a completed “Unwanted Material” label. 
+* A completed Unwanted Materials label means that all contents are identified and their relative contributions add up to 100%.
+* Err on the side of creating a new container if an existing container already contains many different chemicals.
+* Consider the existing contents of a container before adding new chemicals. If a container has a very low pH, do not add water or basic solutions to that container.
+* By default, assume that **nothing we produce can be disposed down the drain**. There are rare exceptions to this, e.g., a solution of water containing only sodium chloride.
 * Waste in a single bottle should be removed within 6 months of the start date and within 10 days of being filled.
 * Submit a waste pickup request as soon as possible \(preferable immediately\) upon filling a container. Alternatively, notify the lab manager \(Jack\) immediately. Peroxide-forming solvents \(e.g., diethyl ether\) have an expiration date and become explosive hazards if stored beyond this date.
+
+#### XIV.   Chemical Deliveries
+
+* Use full PPE \(gloves, goggles, and lab coat\) when unpacking any chemical deliveries. Check for damage to the contents and ensure the cap is secured.
+* Carry large bottles by the handle/neck _and_ from the bottom. Hold bottles to avoid the bottom striking any bench-tops or other obstacles. A 4 liter container of organic solvent \(any type\) breaking constitutes a major chemical spill, fire hazard, and health risk.
+* Use a permanent marker to indicate the received date of any bottle before shelving it.
 

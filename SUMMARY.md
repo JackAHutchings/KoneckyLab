@@ -1,7 +1,7 @@
 # Table of contents
 
 * [Laboratory Handbook](README.md)
-* [Lab Safety Training](lab-safety-training.md)
+* [Lab Specific Safety Training](lab-safety-training.md)
 
 ## Protocols
 

@@ -46,7 +46,7 @@ official code of conduct; policies on scientific integrity, sexual harassment, d
 
 ### ETHICS AND SAFETY
 
-irb procedures; safety procedures; what to do when something goes wrong; what to do/who to call in an emergency
+Our lab routinely uses hazardous materials and operates instruments that can pose serious health risks when misused. Prior to performing **any** work in the lab, any members of the WashU community must take the Environmental Health & Safety Laboratory Safety Training available using the Learn@Work software. Completion of this training includes passing a series of tests and is **mandatory**. In addition \(and for any visiting collaborators\), the Lab Specific Safety Training document on this site must be read and documented within our lab safety book.
 
 ### ENGAGEMENT
 

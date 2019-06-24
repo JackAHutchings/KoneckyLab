@@ -32,6 +32,12 @@ how to get a library card; which building has the best photocopier; useful websi
 
 master list of everything that new lab members need to deal with when starting out, including credentials, software, hardware, keys, university ID, etc
 
+* A WashU ID card to needed for off-hours access to the building and is one of the first things to acquire. Office staff \(room 110\) will be of assistance on this matter. General questions can be answered at the [WashU Card Services website](https://card.wustl.edu/).
+* Physical room keys are needed to access lab spaces and your office. Bob Osburn \(room 134\) handles this. Bob is also a font of knowledge on all things related to this building and its activities.
+* WashU e-mail is administered through Office365, which will also grant you a full license to the Microsoft Office suite of software. This is initiated by our administrative staff \(room 110\).
+* We use [WashU's Box cloud data storage](https://wustl.app.box.com/) for all types of files related to the lab. See Jack for access. We have a user storage folder, and all members of the lab are encouraged to make use of this. If you do not, you should **very seriously** consider another cloud data storage software \(Google Drive, Dropbox, Microsoft Onedrive\) for your research data. Hard-drive failures and lost/stolen laptops are a thing that happens, and losing your research data would be a huge bummer. If the cloud is frightening, we can talk about physical backup solutions.
+* In addition to [campus-wide software licenses](http://sl.wustl.edu/catalog/), our department holds a number of licenses for things such as Adobe Creative Suite and Acrobat Reader. See Hugh Chou \(room 289\) for details.
+
 ### RECURRING EVENTS
 
 logistics and structure of lab meetings, departmental seminars, etc; daily and weekly task lists \(differing by lab roles\)
@@ -46,7 +52,7 @@ official code of conduct; policies on scientific integrity, sexual harassment, d
 
 ### ETHICS AND SAFETY
 
-Our lab routinely uses hazardous materials and operates instruments that can pose serious health risks when misused. Prior to performing **any** work in the lab, any members of the WashU community must take the Environmental Health & Safety Laboratory Safety Training available using the Learn@Work software. Completion of this training includes passing a series of tests and is **mandatory**. In addition \(and for any visiting collaborators\), the Lab Specific Safety Training document on this site must be read and documented within our lab safety book.
+Our lab routinely uses hazardous materials and operates instruments that can pose serious health risks when misused. Prior to performing **any** work in the lab, all members of the WashU community \(students, postdocs, staff, faculty\) must take the Environmental Health & Safety Laboratory Safety Training available using the [Learn@Work website](https://wustl.sabacloud.com). Completion of this training includes passing a series of tests and a record of successful completion is **mandatory**. In addition \(and for any visiting collaborators\), the Lab Specific Safety Training document on this site must be read and documented within our lab safety book.
 
 ### ENGAGEMENT
 

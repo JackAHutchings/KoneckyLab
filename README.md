@@ -8,19 +8,9 @@ research goals; philosophy of how the lab works; chronological and academic hist
 
 who's who and what they do all day, including the PI; expectations of everybody from everyone else's perspective
 
-### OPEN SCIENCE
-
-why and how the lab deals with sharing data, code, materials; how the lab does version control; how to do this stuff with lab collaborators
-
 ### COMMUNICATION
 
 how people in the lab talk to each other; things like "always use Slack", "phone calls are only for emergencies"; how long to wait before nudging the PI on something you need; how meetings with PI work and what to prepare for them; check-ins/stand-ups/huddles
-
-### LOGISTICS
-
-* Although we have no strict policy on when and for how long you should be working, our general philosophy is to be present during normal business hours except under special circumstances.
-* For students/post-docs, working from home or elsewhere _can_ be okay, but should be discussed with Bronwen prior to doing so for any sustained duration.
-* We have three primary lab spaces, all in Rudolph Hall: \(1\) 252/254 is on the east end of the north wing of the second floor, \(2\) L91 is on the west end of the south wing of the basement, and \(3\) the Cold Room located on the west end of the north wing of the first floor \(adjacent to the loading dock\).
 
 ### ONBOARDING
 
@@ -35,6 +25,12 @@ master list of everything that new lab members need to deal with when starting o
 ### RECURRING EVENTS
 
 logistics and structure of lab meetings, departmental seminars, etc; daily and weekly task lists \(differing by lab roles\)
+
+### LOGISTICS
+
+* Although we have no strict policy on when and for how long you should be working, our general philosophy is to be present during normal business hours except under special circumstances.
+* For students/post-docs, working from home or elsewhere _can_ be okay, but should be discussed with Bronwen prior to doing so for any sustained duration.
+* We have three primary lab spaces, all in Rudolph Hall: \(1\) 252/254 is on the east end of the north wing of the second floor, \(2\) L91 is on the west end of the south wing of the basement, and \(3\) the Cold Room located on the west end of the north wing of the first floor \(adjacent to the loading dock\).
 
 ### DAY-TO-DAY
 

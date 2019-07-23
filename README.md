@@ -18,15 +18,9 @@ how people in the lab talk to each other; things like "always use Slack", "phone
 
 ### LOGISTICS
 
-when and for how long people work; policy on remote work; vacation; where the lab is located and how to get there \(especially how to tell _others_ how to get there\); how to book a conference room; what to do if you get locked out
-
-### INTERNAL RESOURCES
-
-these are usually a long list of things people in the lab need access to: servers, software packages, commonly used web tools, shared credentials, room keys and other physical resources, etc
-
-### EXTERNAL RESOURCES
-
-how to get a library card; which building has the best photocopier; useful websites and tutorials, etc
+* Although we have no strict policy on when and for how long you should be working, our general philosophy is to be present during normal business hours except under special circumstances.
+* For students/post-docs, working from home or elsewhere _can_ be okay, but should be discussed with Bronwen prior to doing so for any sustained duration.
+* We have three primary lab spaces, all in Rudolph Hall: \(1\) 252/254 is on the east end of the north wing of the second floor, \(2\) L91 is on the west end of the south wing of the basement, and \(3\) the Cold Room located on the west end of the north wing of the first floor \(adjacent to the loading dock\).
 
 ### ONBOARDING
 

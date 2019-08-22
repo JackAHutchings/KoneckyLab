@@ -7,7 +7,7 @@ rm(list=ls())
   require(dplyr)
   require(tidyr)
   require(ggplot2)
-  theme_set(theme_bw())
+  theme_set(theme_classic())
   require(readxl)
   require(writexl)
   require(zoo)
@@ -503,7 +503,7 @@ calibrated_control <- vial_level_results %>%
   summarize(Observed_Mean = mean(value),
             Observed_Standard_Deviation = sd(value),
             Accepted_Value = unique(known),
-            Root_Mean_Square_Error = sqrt((sum(value-known)^2)/(n()-1)),
+            Root_Mean_Square_Error = sqrt(sum((known-value)^2)/(n()-1)),
             Mean_Signed_Difference = sum(value-known)/n()) %>% 
   gather(metric,value,Observed_Mean:Mean_Signed_Difference) %>% 
   mutate(metric = factor(metric,levels=c("Observed_Mean","Observed_Standard_Deviation","Accepted_Value",

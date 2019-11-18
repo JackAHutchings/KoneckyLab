@@ -29,16 +29,12 @@ setwd(directory)
 
 #Extract  all the data from each Picarro h5 file and combine into the 'rawdata' object
 {
-    sapply(list.files(pattern=".zip"),FUN=unzip,junkpaths=T) # Unzips the h5 files
-    files <- list.files(pattern=".h5") # Generate a list of the h5 files
-    rawdata = data.frame() # Initiate the rawdata object
-    for( i in unique(files)) {
-      temp_data <- h5read(file=i,name="results",bit64conversion='bit64') # Reads a single h5 files
-      rawdata = rbind(rawdata,temp_data) # Append the h5 file to the rawdata object
-    }
-    rm(temp_data)
-    unlink(files) # Deletes the unzipped h5 files.
-    # write.csv(rawdata,"rawdata.csv",row.names=F) # If you want the rawdata as a csv for some reason, uncomment this line. Be warned, the raw CSV will be ~600 mb.
+  sapply(list.files(pattern=".zip"),FUN=unzip,junkpaths=T) # Unzips the h5 files
+  files <- list.files(pattern=".h5") # Generate a list of the h5 files
+  rawdata <- lapply(files,h5read,name="results",bit64conversion='bit64') # Reads in each file as a data.frame in this list.
+  rawdata <- do.call("rbind",rawdata) # collapse the list of data.frames into a single data.frame.
+  unlink(files) # Deletes the unzipped h5 files.
+  # write.csv(rawdata,"rawdata.csv",row.names=F) # If you want the rawdata as a csv for some reason, uncomment this line. Be warned, the raw CSV will be ~600 mb.
 }
 
 # New Data Frame with new variables

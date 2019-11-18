@@ -209,7 +209,7 @@ tray_info <- read_excel("Picarro_Tray_Sheet.xlsx",sheet=1)[,1:4] %>% na.omit() %
   arrange(position) %>% 
   group_by(position,sample) %>% 
   mutate(injection = list(c(1:injections))) %>% 
-  unnest() %>% 
+  unnest(cols = injection) %>% 
   ungroup() %>% 
   mutate(peak_number = (1:n())-1+vars$start_pulse)
 

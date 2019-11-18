@@ -582,9 +582,10 @@ qaqc_tracking <- vial_level_results %>%
   mutate(raw = value,
          drift_corrected = value - (drift_slope*vial_meaninject),
          normalized = drift_corrected * driftcorr_normal_slope + driftcorr_normal_intercept,
-         normalized_nodriftcorr = value * normal_slope + normal_intercept) %>% 
+         normalized_nodriftcorr = value * normal_slope + normal_intercept,
+         sequence = rundate) %>% 
   ungroup() %>% 
-  select(sample,sample_type,vial_meaninject,variable,normalized) %>% 
+  select(sequence,sample,sample_type,vial_meaninject,variable,normalized) %>% 
   spread(variable,normalized) %>% 
   mutate(dxs = dD - 8*d18O,
          D17O = (log(d17O/1000+1)-0.528*log(d18O/1000+1))*1000*1000) %>% 
@@ -594,13 +595,13 @@ qaqc_tracking <- vial_level_results %>%
          dxs = round(dxs,2),
          D17O = round(D17O,0),
          rundate = as.Date(min(vial_level_results$vial_start),format="YYYY-MM-DD")) %>% 
-  select(rundate,sample:D17O)
+  select(rundate,sequence:D17O)
 
 
 # Data Export
 
-# Uncalibrated Raw pulse peaks
-write.csv(pulse_level_results,paste(rundate,"_pulses.csv",sep=""),row.names=F)
+# # Uncalibrated Raw pulse peaks ### Large file (>100 MB), export only if necessary
+# write.csv(pulse_level_results,paste(rundate,"_pulses.csv",sep=""),row.names=F)
 # Uncalibrated Injection level data
 write.csv(injection_level_results,paste(rundate,"_injections.csv",sep=""),row.names=F)
 # Uncalibrated Vial level data

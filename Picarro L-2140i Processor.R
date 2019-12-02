@@ -63,20 +63,20 @@ data <- rawdata %>%
          unixhours = time/60/60,
          datetime = as.POSIXct(time,origin="1970-01-01",tz='CST6CDT'))
 
-vars <- data.frame(h2o_threshold_lower = 7500, #ppm of H2O to reach before looking for peaks
-                   h2o_threshold_upper = 27500, #ppm of H2O to reach before stopping looking for peaks; this helps remove end-of-pulse jumps
-                   h2o_smoothing_n = 10, #number of consecutive scans to calculate a rolling mean for
-                   h2o_smoothed_diff_threshold = 125, #differential ppm of H2O to ID the front end of a peak
-                   h2o_slope_maximum = 2500, # this is an attempt to remove end-of-injection 'spikes' from the peak set
-                   h2o_slope_minimum = 75, # also is an attempt to remove end-of-injection 'spikes' from the peak set
-                   peak_start_trim = 30, #number of scans at the start of a peak to drop
-                   peak_end_trim = 20, #number of scans at the end of a peak to drop
-                   short_integration = 180, #count of scans (aka seconds) to use for short integrations
-                   peak_interval_sd_threshold = 5, #How many standard deviations from the mean peak-to-peak interval to use to flag false positives?
-                   residual_threshold = 2, #Flag samples with values greater than this many standard deviations away from standard injections.
-                   baseline_shift_threshold = 18, #Flag samples with values greater than this many standard deviations away from standard injections.
-                   baseline_curvature_threshold = 3, #Flag samples with values greater than this many standard deviations away from standard injections.
-                   dxs_threshold = 0 #Flag samples with deuterium excess values below this value, typically indicative of vial evaporation.
+vars <- vars %>% mutate(h2o_threshold_lower = 7500, #ppm of H2O to reach before looking for peaks
+                     h2o_threshold_upper = 27500, #ppm of H2O to reach before stopping looking for peaks; this helps remove end-of-pulse jumps
+                     h2o_smoothing_n = 10, #number of consecutive scans to calculate a rolling mean for
+                     h2o_smoothed_diff_threshold = 125, #differential ppm of H2O to ID the front end of a peak
+                     h2o_slope_maximum = 2500, # this is an attempt to remove end-of-injection 'spikes' from the peak set
+                     h2o_slope_minimum = 75, # also is an attempt to remove end-of-injection 'spikes' from the peak set
+                     peak_start_trim = 30, #number of scans at the start of a peak to drop
+                     peak_end_trim = 20, #number of scans at the end of a peak to drop
+                     short_integration = 180, #count of scans (aka seconds) to use for short integrations
+                     peak_interval_sd_threshold = 5, #How many standard deviations from the mean peak-to-peak interval to use to flag false positives?
+                     residual_threshold = 2, #Flag samples with values greater than this many standard deviations away from standard injections.
+                     baseline_shift_threshold = 18, #Flag samples with values greater than this many standard deviations away from standard injections.
+                     baseline_curvature_threshold = 3, #Flag samples with values greater than this many standard deviations away from standard injections.
+                     dxs_threshold = 0 #Flag samples with deuterium excess values below this value, typically indicative of vial evaporation.
 )
 
 data_pulses <- data %>% filter(ValveMask>1) %>% #filter the data for when the vaporizer valve is set introducing an injection

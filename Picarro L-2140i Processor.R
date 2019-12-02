@@ -18,7 +18,7 @@ rm(list=ls())
 
 # STEP 1: Save this script in the same directory as the Private Data .zip files and the matching Piccaro_Tray_Sheet.
 # STEP 2: Provide your name or initials! This will be attached to various output files.
-vars$username = "JAH"
+vars <- data.frame(username = "JAH")
 # STEP 3: Execute the script in order. User-defined options are confined to the 'vars' object, which is in-line with the code
 #         near where the user-defined option is relevant. In general, you should not need to change these, but do pay attention
 #         just in case!
@@ -594,8 +594,9 @@ qaqc_tracking <- vial_level_results %>%
          dD = round(dD,2),
          dxs = round(dxs,2),
          D17O = round(D17O,0),
-         rundate = as.Date(min(vial_level_results$vial_start),format="YYYY-MM-DD")) %>% 
-  select(rundate,sequence:D17O)
+         rundate = as.Date(min(vial_level_results$vial_start),format="YYYY-MM-DD"),
+         username = vars$username) %>% 
+  select(rundate,username,sequence:D17O)
 
 
 # Data Export

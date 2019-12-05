@@ -583,7 +583,7 @@ qaqc_tracking <- vial_level_results %>%
          drift_corrected = value - (drift_slope*vial_meaninject),
          normalized = drift_corrected * driftcorr_normal_slope + driftcorr_normal_intercept,
          normalized_nodriftcorr = value * normal_slope + normal_intercept,
-         sequence = rundate) %>% 
+         sequence = vars$sequence) %>% 
   ungroup() %>% 
   mutate(calibrated_value = ifelse(drift_correct,normalized,normalized_nodriftcorr)) %>%
   select(sequence,sample,sample_type,vial_meaninject,variable,calibrated_value) %>% 

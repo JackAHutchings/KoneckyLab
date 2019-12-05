@@ -14,11 +14,13 @@ rm(list=ls())
   require(lubridate)
   require(rhdf5)
   require(rstudioapi)
+  options(scipen=999)
 }
 
 # STEP 1: Save this script in the same directory as the Private Data .zip files and the matching Piccaro_Tray_Sheet.
 # STEP 2: Provide your name or initials! This will be attached to various output files.
-vars <- data.frame(username = "JAH")
+vars <- data.frame(username = "JAH",
+                   sequence = "Enter Sequence Name")
 # STEP 3: Execute the script in order. User-defined options are confined to the 'vars' object, which is in-line with the code
 #         near where the user-defined option is relevant. In general, you should not need to change these, but do pay attention
 #         just in case!
@@ -56,9 +58,7 @@ data <- rawdata %>%
          dD = (rDH/ref.rD-1)*1000,
          d17O = (r1716/ref.r17O-1)*1000,
          d18O = (r1816/ref.r18O-1)*1000,
-         d17O_prime = log(r1716/ref.r17O),
-         d18O_prime = log(r1816/ref.r18O),
-         D17O = (d17O_prime - 0.528*d18O_prime)*1000,
+         D17O = (log(d17O/1000+1)-0.528*log(d18O/1000+1))*1000*1000,
          dxs = dD-8*d18O,
          unixhours = time/60/60,
          datetime = as.POSIXct(time,origin="1970-01-01",tz='CST6CDT'))
@@ -585,8 +585,9 @@ qaqc_tracking <- vial_level_results %>%
          normalized_nodriftcorr = value * normal_slope + normal_intercept,
          sequence = rundate) %>% 
   ungroup() %>% 
-  select(sequence,sample,sample_type,vial_meaninject,variable,normalized) %>% 
-  spread(variable,normalized) %>% 
+  mutate(calibrated_value = ifelse(drift_correct,normalized,normalized_nodriftcorr)) %>%
+  select(sequence,sample,sample_type,vial_meaninject,variable,calibrated_value) %>% 
+  spread(variable,calibrated_value) %>% 
   mutate(dxs = dD - 8*d18O,
          D17O = (log(d17O/1000+1)-0.528*log(d18O/1000+1))*1000*1000) %>% 
   mutate(d17O = round(d17O,4),

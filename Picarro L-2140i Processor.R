@@ -44,9 +44,10 @@ setwd(directory)
 # These need to be properly scale normalized to SMOW-SLAP using the standards from this run.
 
 data <- rawdata %>% 
-  mutate(ref.rD = 0.148605440565915,   #      Observed R of VSMOW2 for the Konecky Lab L2140-i from 2018-12-17
-         ref.r17O = 0.589386241299641, #      Observed R of VSMOW2 for the Konecky Lab L2140-i from 2018-12-17
-         ref.r18O = 0.966147395314548) %>%  # Observed R of VSMOW2 for the Konecky Lab L2140-i from 2018-12-17
+  mutate(ref.rD = 0.1491,   # Observed R of VSMOW2 for the Konecky Lab L2140-i from 2018-12-17
+         ref.r17O = 0.5892, # Observed R of VSMOW2 for the Konecky Lab L2140-i from 2018-12-17
+         ref.r18O = 0.9658, # Observed R of VSMOW2 for the Konecky Lab L2140-i from 2018-12-17
+         ref.r18O_alt = 1.7042) %>%  # Observed R of VSMOW2 for the Konecky Lab L2140-i from 2018-12-17
   mutate(rDH = str3_offset / str2_offset, # 2H / 1H
          r1716 = str13_offset / str2_offset, # 17O / 16O
          r1816 = str11_offset / str2_offset, # 18O / 16O
@@ -58,6 +59,7 @@ data <- rawdata %>%
          dD = (rDH/ref.rD-1)*1000,
          d17O = (r1716/ref.r17O-1)*1000,
          d18O = (r1816/ref.r18O-1)*1000,
+         d18O_alt = (r1816_alt/ref.r18O_alt-1)*1000,
          D17O = (log(d17O/1000+1)-0.528*log(d18O/1000+1))*1000*1000,
          dxs = dD-8*d18O,
          unixhours = time/60/60,
@@ -77,6 +79,7 @@ vars <- vars %>% mutate(h2o_threshold_lower = 7500, #ppm of H2O to reach before 
                         baseline_shift_threshold = 4, #Flag samples with values greater than this many standard deviations away from standard injections.
                         baseline_curvature_threshold = 3, #Flag samples with values greater than this many standard deviations away from standard injections.
                         slopeshift_threshold = 2, #Flag samples with values greater than this many standard deviations away from standard injections.
+                        d18Odiff_threshold = 2, #Flag samples with values greater than this many standard deviations away from standard injections.
                         dxs_threshold = 0 #Flag samples with deuterium excess values below this value, typically indicative of vial evaporation.
 )
 
@@ -252,12 +255,23 @@ injection_level_results_raw <- pulse_level_results %>%
             cavity_torr_sd_short = sd(CavityPressure[which(short_integration==T)]), # Cavity pressure, torr
             cavity_temp_mean_short = mean(CavityTemp[which(short_integration==T)]), # Cavity temperature, torr
             cavity_temp_sd_short = sd(CavityTemp[which(short_integration==T)]), # Cavity temperature, torr
+            rDH_mean = mean(rDH),
+            rDH_sd = sd(rDH),
+            r1716_mean = mean(r1716),
+            r1716_sd = sd(r1716),
+            r1816_mean = mean(r1816),
+            r1816_sd = sd(r1816),
+            r1816_alt_mean = mean(r1816_alt),
+            r1816_alt_sd = sd(r1816_alt),
             dD_mean_short = mean(dD[which(short_integration==T)]), # dD relative to VSMOW2, STILL REQUIRES CALIBRATION
             dD_sd_short = sd(dD[which(short_integration==T)]), # dD relative to VSMOW2, STILL REQUIRES CALIBRATION
             d17O_mean = mean(d17O), # d17O relative to VSMOW2, STILL REQUIRES CALIBRATION
             d17O_sd = sd(d17O), # d17O relative to VSMOW2, STILL REQUIRES CALIBRATION
+            d18Oalt_mean = mean(d18O_alt),
+            d18Oalt_sd = sd(d18O_alt),
             d18O_mean = mean(d18O), # d18O relative to VSMOW2, STILL REQUIRES CALIBRATION
             d18O_sd = sd(d18O), # d18O relative to VSMOW2, STILL REQUIRES CALIBRATION
+            d18O_diff = d18O_mean - d18Oalt_mean,
             d18O_slope = lm(d18O~peak_seconds)$coefficients[2], # d18O change during pulse
             rawD17O_mean = mean(D17O), # D17O based on uncalibrated data
             dxs_mean_short = mean(dxs[which(short_integration==T)]), # deuterium excess for potential problem flagging
@@ -365,6 +379,7 @@ vars$n_injections = 3 #The number of injections from a vial to use for calculati
 vial_level_results <- injection_level_results %>% 
   group_by(position,sample,sample_type) %>% 
   filter(injection > max(injection)-vars$n_injections) %>% # Use only the last X injections of a vial, where X is vars$n_injections
+  mutate(datetime_start = as_datetime(datetime_start)) %>% 
   summarize(vial_start = min(datetime_start),
             vial_end = max(datetime_start) + duration[which(datetime_start==max(datetime_start))],
             vial_dxs_flag = ifelse(mean(dxs_mean_short)<vars$dxs_threshold,"[Deuterium Excess is Low] ",""),
@@ -390,6 +405,7 @@ vial_level_results <- injection_level_results %>%
             vial_cavity_torr_sd = sd(cavity_torr_mean),
             vial_cavity_temp_mean = mean(cavity_temp_mean),
             vial_cavity_temp_sd = sd(cavity_temp_mean),
+            vial_d18Odiff = mean(d18O_diff),
             vial_residuals = mean(residual_mean),
             vial_baseshift = mean(baselineshift_mean),
             vial_basecurve = mean(baselinecurvative_mean),
@@ -416,7 +432,7 @@ vial_level_results <- injection_level_results %>%
          basecurve_flag = ifelse(vial_basecurve < basecurve_lower | vial_basecurve > basecurve_upper,T,F),
          slopeshift_flag = ifelse(vial_slopeshift < slopeshift_lower | vial_slopeshift > slopeshift_upper,T,F),
          vial_organics_flag = ifelse(residuals_flag|baseshift_flag|basecurve_flag|slopeshift_flag,"[Organic Spectral Contamination]","")) %>% 
-  select(-c(vial_residuals:basecurve_flag)) %>% 
+  select(-c(standards_residuals_mean:basecurve_flag)) %>% 
   select(position,sample,sample_type,vial_start,vial_end,vial_dxs_flag,vial_organics_flag,vial_meaninject,
          vial_dD_mean_short:vial_cavity_temp_sd) %>% 
   gather(variable,value,vial_dD_mean_short:vial_cavity_temp_sd) %>% 

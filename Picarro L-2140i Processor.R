@@ -64,20 +64,22 @@ data <- rawdata %>%
          datetime = as.POSIXct(time,origin="1970-01-01",tz='CST6CDT'))
 
 vars <- vars %>% mutate(h2o_threshold_lower = 7500, #ppm of H2O to reach before looking for peaks
-                     h2o_threshold_upper = 27500, #ppm of H2O to reach before stopping looking for peaks; this helps remove end-of-pulse jumps
-                     h2o_smoothing_n = 10, #number of consecutive scans to calculate a rolling mean for
-                     h2o_smoothed_diff_threshold = 125, #differential ppm of H2O to ID the front end of a peak
-                     h2o_slope_maximum = 2500, # this is an attempt to remove end-of-injection 'spikes' from the peak set
-                     h2o_slope_minimum = 75, # also is an attempt to remove end-of-injection 'spikes' from the peak set
-                     peak_start_trim = 30, #number of scans at the start of a peak to drop
-                     peak_end_trim = 20, #number of scans at the end of a peak to drop
-                     short_integration = 180, #count of scans (aka seconds) to use for short integrations
-                     peak_interval_sd_threshold = 5, #How many standard deviations from the mean peak-to-peak interval to use to flag false positives?
-                     residual_threshold = 2, #Flag samples with values greater than this many standard deviations away from standard injections.
-                     baseline_shift_threshold = 18, #Flag samples with values greater than this many standard deviations away from standard injections.
-                     baseline_curvature_threshold = 3, #Flag samples with values greater than this many standard deviations away from standard injections.
-                     dxs_threshold = 0 #Flag samples with deuterium excess values below this value, typically indicative of vial evaporation.
+                        h2o_threshold_upper = 27500, #ppm of H2O to reach before stopping looking for peaks; this helps remove end-of-pulse jumps
+                        h2o_smoothing_n = 10, #number of consecutive scans to calculate a rolling mean for
+                        h2o_smoothed_diff_threshold = 125, #differential ppm of H2O to ID the front end of a peak
+                        h2o_slope_maximum = 2500, # this is an attempt to remove end-of-injection 'spikes' from the peak set
+                        h2o_slope_minimum = 75, # also is an attempt to remove end-of-injection 'spikes' from the peak set
+                        peak_start_trim = 30, #number of scans at the start of a peak to drop
+                        peak_end_trim = 20, #number of scans at the end of a peak to drop
+                        short_integration = 180, #count of scans (aka seconds) to use for short integrations
+                        peak_interval_sd_threshold = 5, #How many standard deviations from the mean peak-to-peak interval to use to flag false positives?
+                        residual_threshold = 2, #Flag samples with values greater than this many standard deviations away from standard injections.
+                        baseline_shift_threshold = 4, #Flag samples with values greater than this many standard deviations away from standard injections.
+                        baseline_curvature_threshold = 3, #Flag samples with values greater than this many standard deviations away from standard injections.
+                        slopeshift_threshold = 2, #Flag samples with values greater than this many standard deviations away from standard injections.
+                        dxs_threshold = 0 #Flag samples with deuterium excess values below this value, typically indicative of vial evaporation.
 )
+
 
 data_pulses <- data %>% filter(ValveMask>1) %>% #filter the data for when the vaporizer valve is set introducing an injection
   mutate(scan_num = 1:n()) #create an index of scans
@@ -296,7 +298,13 @@ fmem_terms <- injection_level_results_raw %>% group_by(position,sample) %>% filt
   fmem_history <- read_excel("memory_coefficients.xlsx")
   fmem_data <- rbind(fmem_history,fmem_terms %>% mutate(rundate = rundate) %>% select(rundate,memory_run:fmem_sd) %>% as.data.frame(.)) %>% 
     distinct()
-  fmem_terms <- fmem_data %>% filter(memory_run) %>% filter(rundate == max(rundate))
+  fmem_terms <- fmem_data %>% filter(memory_run) %>% rename(mem_run = rundate) %>% 
+    mutate(mem_run = as_datetime(mem_run),
+           sequence_date = as_datetime(rundate),
+           diff = abs(mem_run - sequence_date)) %>% 
+    filter(diff == min(diff)) %>% 
+    select(-sequence_date) %>% 
+    rename(rundate = mem_run)
   write_xlsx(fmem_data,"memory_coefficients.xlsx")
   rm(fmem_history,fmem_data)
   setwd(directory)
@@ -401,16 +409,19 @@ vial_level_results <- injection_level_results %>%
          basecurve_lower = standards_basecurve_mean - vars$baseline_curvature_threshold*standards_basecurve_sd,
          standards_slopeshift_mean = mean(vial_slopeshift[which(sample_type=="standard")]),
          standards_slopeshift_sd = sd(vial_slopeshift[which(sample_type=="standard")]),
+         slopeshift_upper = standards_slopeshift_mean + vars$slopeshift_threshold*standards_slopeshift_sd,
+         slopeshift_lower = standards_slopeshift_mean - vars$slopeshift_threshold*standards_slopeshift_sd,
          residuals_flag = ifelse(vial_residuals < residuals_lower & sample_type=="sample" | vial_residuals > residuals_upper ,T,F),
          baseshift_flag = ifelse(vial_baseshift < baseshift_lower | vial_baseshift > baseshift_upper,T,F),
          basecurve_flag = ifelse(vial_basecurve < basecurve_lower | vial_basecurve > basecurve_upper,T,F),
-         vial_organics_flag = ifelse(residuals_flag|baseshift_flag|basecurve_flag,"[Organic Spectral Contamination]","")) %>% 
+         slopeshift_flag = ifelse(vial_slopeshift < slopeshift_lower | vial_slopeshift > slopeshift_upper,T,F),
+         vial_organics_flag = ifelse(residuals_flag|baseshift_flag|basecurve_flag|slopeshift_flag,"[Organic Spectral Contamination]","")) %>% 
   select(-c(vial_residuals:basecurve_flag)) %>% 
   select(position,sample,sample_type,vial_start,vial_end,vial_dxs_flag,vial_organics_flag,vial_meaninject,
          vial_dD_mean_short:vial_cavity_temp_sd) %>% 
   gather(variable,value,vial_dD_mean_short:vial_cavity_temp_sd) %>% 
   mutate(variable = substring(variable,first=6)) %>% 
-  spread(variable,value) # %>% filter(vial_meaninject !=281)
+  spread(variable,value)
 
 # ggplot(vial_level_results %>% ungroup() %>% mutate(rel_h2o = h2o_mean/mean(h2o_mean)*100),aes(x=vial_meaninject,y=rel_h2o)) +
 #   geom_line()
@@ -438,7 +449,7 @@ drift_function_plot
 
 # Set the 'drift_correct' variable to T/F (i.e., TRUE/FALSE) to determine if it is to be drift-corrected.
 drift_correction_table <- data.frame(variable =      c("d17O","d18O","dD"),
-                                     drift_correct = c(F     ,F     ,F)) %>%   mutate(variable = as.character(variable))
+                                     drift_correct = c(T     ,T     ,T)) %>%   mutate(variable = as.character(variable))
 
 ggsave("drift_functions.pdf",drift_function_plot)
 

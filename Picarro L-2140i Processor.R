@@ -78,8 +78,8 @@ vars <- vars %>% mutate(h2o_threshold_lower = 7500, #ppm of H2O to reach before 
                         residual_threshold = 2, #Flag samples with values greater than this many standard deviations away from standard injections.
                         baseline_shift_threshold = 4, #Flag samples with values greater than this many standard deviations away from standard injections.
                         baseline_curvature_threshold = 3, #Flag samples with values greater than this many standard deviations away from standard injections.
-                        slopeshift_threshold = 2, #Flag samples with values greater than this many standard deviations away from standard injections.
-                        d18Odiff_threshold = 2, #Flag samples with values greater than this many standard deviations away from standard injections.
+                        slopeshift_threshold = 4, #Flag samples with values greater than this many standard deviations away from standard injections.
+                        d18Olaser_threshold = 1.75, # Flag samples with values greater than this many multiples greater from standard injections.
                         dxs_threshold = 0 #Flag samples with deuterium excess values below this value, typically indicative of vial evaporation.
 )
 
@@ -204,7 +204,7 @@ ggplot(data_pulse_peaks_4 %>% ungroup() %>% select(peak_number,is_peak,mean_date
   #   facet_wrap(~var,ncol=1,scales="free_y") +
   #   scale_x_datetime(breaks = "4 hour", date_labels = "%b %d\n%I %p") +
   #   theme(axis.text.x = element_text(angle=0))
-}
+  }
 
 vars$start_pulse = 1 #Identify the first pulse in your run here!
 
@@ -271,7 +271,7 @@ injection_level_results_raw <- pulse_level_results %>%
             d18Oalt_sd = sd(d18O_alt),
             d18O_mean = mean(d18O), # d18O relative to VSMOW2, STILL REQUIRES CALIBRATION
             d18O_sd = sd(d18O), # d18O relative to VSMOW2, STILL REQUIRES CALIBRATION
-            d18O_diff = d18O_mean - d18Oalt_mean,
+            d18O_laser_sd = sqrt(mean((d18O - d18O_alt)^2)),
             d18O_slope = lm(d18O~peak_seconds)$coefficients[2], # d18O change during pulse
             rawD17O_mean = mean(D17O), # D17O based on uncalibrated data
             dxs_mean_short = mean(dxs[which(short_integration==T)]), # deuterium excess for potential problem flagging
@@ -405,7 +405,7 @@ vial_level_results <- injection_level_results %>%
             vial_cavity_torr_sd = sd(cavity_torr_mean),
             vial_cavity_temp_mean = mean(cavity_temp_mean),
             vial_cavity_temp_sd = sd(cavity_temp_mean),
-            vial_d18Odiff = mean(d18O_diff),
+            vial_d18Olaser = mean(d18O_laser_sd),
             vial_residuals = mean(residual_mean),
             vial_baseshift = mean(baselineshift_mean),
             vial_basecurve = mean(baselinecurvative_mean),
@@ -427,15 +427,19 @@ vial_level_results <- injection_level_results %>%
          standards_slopeshift_sd = sd(vial_slopeshift[which(sample_type=="standard")]),
          slopeshift_upper = standards_slopeshift_mean + vars$slopeshift_threshold*standards_slopeshift_sd,
          slopeshift_lower = standards_slopeshift_mean - vars$slopeshift_threshold*standards_slopeshift_sd,
+         standards_d18Olaser = mean(vial_d18Olaser[which(sample_type=="standard")]),
+         d18Olaser_upper = standards_d18Olaser * vars$d18Olaser_threshold,
+         d18Olaser_flag = ifelse(vial_d18Olaser > d18Olaser_upper,T,F),
          residuals_flag = ifelse(vial_residuals < residuals_lower & sample_type=="sample" | vial_residuals > residuals_upper ,T,F),
          baseshift_flag = ifelse(vial_baseshift < baseshift_lower | vial_baseshift > baseshift_upper,T,F),
          basecurve_flag = ifelse(vial_basecurve < basecurve_lower | vial_basecurve > basecurve_upper,T,F),
          slopeshift_flag = ifelse(vial_slopeshift < slopeshift_lower | vial_slopeshift > slopeshift_upper,T,F),
-         vial_organics_flag = ifelse(residuals_flag|baseshift_flag|basecurve_flag|slopeshift_flag,"[Organic Spectral Contamination]","")) %>% 
+         vial_organics_flag = ifelse(residuals_flag|baseshift_flag|basecurve_flag|slopeshift_flag,"[Organic Spectral Contamination]",""),
+         vial_organics_flag_laser = ifelse(d18Olaser_flag,"[18O-Laser Organic Spectral Contamination]","")) %>% 
   select(-c(standards_residuals_mean:basecurve_flag)) %>% 
-  select(position,sample,sample_type,vial_start,vial_end,vial_dxs_flag,vial_organics_flag,vial_meaninject,
-         vial_dD_mean_short:vial_cavity_temp_sd) %>% 
-  gather(variable,value,vial_dD_mean_short:vial_cavity_temp_sd) %>% 
+  select(position,sample,sample_type,vial_start,vial_end,vial_dxs_flag,vial_organics_flag,vial_organics_flag_laser,vial_meaninject,
+         vial_dD_mean_short:vial_d18Olaser) %>% 
+  gather(variable,value,vial_dD_mean_short:vial_d18Olaser) %>% 
   mutate(variable = substring(variable,first=6)) %>% 
   spread(variable,value)
 
@@ -553,7 +557,7 @@ calibrated_control <- vial_level_results %>%
 calibrated_samples <- vial_level_results %>% 
   filter(sample_type=="sample") %>% 
   group_by(vial_meaninject,sample) %>% 
-  select(vial_meaninject,sample,vial_dxs_flag,vial_organics_flag,dD_mean_short,d18O_mean,d17O_mean) %>% 
+  select(vial_meaninject,sample,vial_dxs_flag,vial_organics_flag,vial_organics_flag_laser,dD_mean_short,d18O_mean,d17O_mean) %>% 
   gather(variable,value,dD_mean_short:d17O_mean) %>% 
   separate(variable,"variable",sep="_",extra="drop") %>% 
   full_join(calibration_functions,by="variable") %>% 
@@ -563,7 +567,7 @@ calibrated_samples <- vial_level_results %>%
          normalized_nodriftcorr = value * normal_slope + normal_intercept) %>% 
   ungroup() %>% 
   mutate(calibrated_value = ifelse(drift_correct,normalized,normalized_nodriftcorr)) %>%
-  select(sample,vial_organics_flag,variable,calibrated_value) %>% 
+  select(sample,vial_organics_flag,vial_organics_flag_laser,variable,calibrated_value) %>% 
   spread(variable,calibrated_value) %>% 
   mutate(dxs = dD - 8*d18O,
          D17O = (log(d17O/1000+1)-0.528*log(d18O/1000+1))*1000*1000) %>% 
@@ -573,7 +577,7 @@ calibrated_samples <- vial_level_results %>%
          dxs = round(dxs,2),
          D17O = round(D17O,0),
          vial_dxs_flag = ifelse(dxs < vars$dxs_threshold,"[Deuterium Excess is Low] ","")) %>% 
-  unite(vial_flags,c(vial_dxs_flag,vial_organics_flag),sep="") %>% 
+  unite(vial_flags,c(vial_dxs_flag,vial_organics_flag,vial_organics_flag_laser),sep="") %>% 
   gather(variable,value,d17O:D17O) %>% 
   mutate(variable = factor(variable,levels=c("d18O","d17O","dD","dxs","D17O"),ordered=T,
                            labels=c("\u03B4\u00B9\u2078O (\u2030)",
@@ -658,7 +662,7 @@ write_xlsx(qaqc_master,"QAQC Tracking.xlsx")
            setnames(.,c("sample","d18O","dD")),aes(x=d18O,y=dD)) +
     geom_point() +
     geom_abline(aes(slope=8.2,intercept=11.27))
-
+  
   ggplot(calibrated_samples %>% select(sample,variable,'Corrections: Drift & Calibrated') %>%
            spread(variable,'Corrections: Drift & Calibrated') %>% .[,c(1,2,4,5,6)] %>%
            setnames(.,c("sample","d18O","dD","D_Excess","D17O")),

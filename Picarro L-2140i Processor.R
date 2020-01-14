@@ -76,10 +76,10 @@ vars <- vars %>% mutate(h2o_threshold_lower = 7500, #ppm of H2O to reach before 
                         short_integration = 180, #count of scans (aka seconds) to use for short integrations
                         peak_interval_sd_threshold = 5, #How many standard deviations from the mean peak-to-peak interval to use to flag false positives?
                         residual_threshold = 2, #Flag samples with values greater than this many standard deviations away from standard injections.
-                        baseline_shift_threshold = 4, #Flag samples with values greater than this many standard deviations away from standard injections.
+                        baseline_shift_threshold = 18, #Flag samples with values greater than this many standard deviations away from standard injections.
                         baseline_curvature_threshold = 3, #Flag samples with values greater than this many standard deviations away from standard injections.
                         slopeshift_threshold = 4, #Flag samples with values greater than this many standard deviations away from standard injections.
-                        d18Olaser_threshold = 1.75, # Flag samples with values greater than this many multiples greater from standard injections.
+                        d18Olaser_threshold = 5, # Flag samples with values greater than this many multiples greater from standard injections.
                         dxs_threshold = 0 #Flag samples with deuterium excess values below this value, typically indicative of vial evaporation.
 )
 
@@ -112,11 +112,14 @@ data_pulse_peaks_2 <- data_pulse_peaks %>% filter(start_peak==T) %>%
                        "Bad","Good"), #Flags peaks with >2 SD peak-to-peak intervals
          flag = ifelse(start_peak_index == 1,"Good",flag)) #The first peak often has strange timing, so it is always flagged 'Good' 
 
-peak_flag_override = c() #Enter the 'start_peak_index' from data_pulse_peaks_2 of any peak flagged as Bad that is actually good.
+bad_flag_override = c() #Enter the 'start_peak_index' from data_pulse_peaks_2 of any peak flagged as Bad that is actually good.
+good_flag_override = c() #Enter the 'start_peak_index' from data_pulse_peaks2 of any peak flagged as Good that is actually bad.
+
 # This should only be necessary when there has been instrument failure, but other things (Daylight Savings) can sometimes be a problem.
 
 data_pulse_peaks_3 <- data_pulse_peaks_2 %>%
-  mutate(flag = ifelse(start_peak_index %in% peak_flag_override,"Good",flag)) %>% 
+  mutate(flag = ifelse(start_peak_index %in% bad_flag_override,"Good",flag)) %>% 
+  mutate(flag = ifelse(start_peak_index %in% good_flag_override,"Bad",flag)) %>% 
   filter(flag == "Good" | is.na(flag)) %>%   #Select only the first peak (NA) and 'Good' peaks using the 2 SD criterion
   ungroup() %>% 
   mutate(start_peak_index = 1:n(), # Recreate the start peak index after having removed false positives
@@ -428,7 +431,8 @@ vial_level_results <- injection_level_results %>%
          slopeshift_upper = standards_slopeshift_mean + vars$slopeshift_threshold*standards_slopeshift_sd,
          slopeshift_lower = standards_slopeshift_mean - vars$slopeshift_threshold*standards_slopeshift_sd,
          standards_d18Olaser = mean(vial_d18Olaser[which(sample_type=="standard")]),
-         d18Olaser_upper = standards_d18Olaser * vars$d18Olaser_threshold,
+         standards_d18Olaser_sd = sd(vial_d18Olaser[which(sample_type=="standard")]),
+         d18Olaser_upper = standards_d18Olaser + standards_d18Olaser_sd * vars$d18Olaser_threshold,
          d18Olaser_flag = ifelse(vial_d18Olaser > d18Olaser_upper,T,F),
          residuals_flag = ifelse(vial_residuals < residuals_lower & sample_type=="sample" | vial_residuals > residuals_upper ,T,F),
          baseshift_flag = ifelse(vial_baseshift < baseshift_lower | vial_baseshift > baseshift_upper,T,F),

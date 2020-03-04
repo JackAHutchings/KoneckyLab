@@ -162,7 +162,7 @@ data_pulse_peaks_4 <- full_join(data_pulses,data_pulse_peaks_3,by = "datetime") 
 vars <- vars %>% 
   mutate(plot_start_adjust = 1, #Number of hours before the first detected injection to plot. Set this to -Inf to plot from the beginning.
          plot_end_adjust = 1, #Number of hours after the last detected injection to plot. Set this to Inf to plot until the end.
-         resolution_factor = 8 #Reduces the resolution of the plot below as a multiple of this factor. Makes plotting faster.
+         resolution_factor = 16 #Reduces the resolution of the plot below as a multiple of this factor. Makes plotting faster.
   )
 
 ggplot(data_pulse_peaks_4 %>% ungroup() %>% select(peak_number,is_peak,mean_datetime,datetime,H2O,d18O) %>% gather(var,val,H2O,d18O) %>% 
@@ -608,7 +608,7 @@ report_readme <- data.frame(Sheet = c(rep("Sheet 1",7),rep("Sheet 2",7)),
 
 
 qaqc_tracking <- vial_level_results %>% 
-  filter(sample_type=="drift"|sample_type=="control"|sample_type=="control_std") %>% 
+  filter(sample_type=="drift"|sample_type=="control"|sample_type=="control_std"|sample_type=="lab") %>% 
   group_by(vial_meaninject,sample) %>% 
   select(vial_meaninject,sample,sample_type,vial_dxs_flag,vial_organics_flag,dD_mean_short,d18O_mean,d17O_mean) %>% 
   gather(variable,value,dD_mean_short:d17O_mean) %>% 

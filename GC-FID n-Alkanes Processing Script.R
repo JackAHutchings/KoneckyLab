@@ -2,11 +2,6 @@
 # Jack A Hutchings, jackh@wustl.edu
 # 2019.06.12
 
-# Please double check the parameters sheet of the processing template to ensure the variables
-# match the values used in your extraction procedure.
-
-###################################   Required Files   #####################################
-
 # Needed to run this script.
 library(dplyr)
 library(ggplot2)
@@ -15,11 +10,12 @@ library(tidyr)
 library(readxl)
 library(writexl)
 
-#You'll need to set your working directory to wherever your data are!
-#This is easiest done using the Session > Set Working Directory option in the RStudio GUI
-setwd()
-
 rm(list=ls())
+options(scipen=999)
+
+setwd(dirname(rstudioapi::getActiveDocumentContext()$ path))
+
+####################################################################################################
 
 input <- "GC-FID n-Alkanes Processing Template.xlsx"
 raw_data <- list(gcfid = read_excel(input,sheet=2,na="N/A"),
@@ -70,12 +66,10 @@ ggplot(calib,aes(log_area,log_inj,color=batch)) +
 #Residual Plot
 calib.check %>% 
   ggplot(aes(dil,relative.residual)) +
-  geom_bar(stat = "identity",position = "dodge") +
+  geom_point() +
   facet_wrap(~comp,scales = "free_y") +
-  labs(x = "Dilution #", y = "Relative Residual")
+  labs(x = "Dilution #", y = "Relative Residual (%)")
 
-#Clean-up from the calibration section
-rm(calib,calib.check)
 
 
 #######  STEP 2  #################   Data Analysis  ########################################
@@ -91,15 +85,22 @@ data <- raw_data$gcfid %>%
          irs.theoretical = irs / irs.vol * irs.spike / volume * inj.vol) %>% group_by(id1,id2) %>% 
   mutate(ug.total = ng.injected / inj.vol * volume / 1000) %>% 
   mutate(uggs = ug.total / mass_mg * 1000) %>%  #micrograms per gram sediment
-  select(id1,id2,carbon_toc,comp,uggs) %>% 
+  select(id1,id2,mass_mg,carbon_toc,comp,uggs) %>% 
   spread(comp,uggs) %>%
   mutate(
     sigmaLCA = sum(C20,C21,C22,C23,C24,C25,C26,C27,C28,C29,C30,C31,C32,C33,C34,C35),
     lambdaLCA = sigmaLCA*100/carbon_toc,
     ACL = (21*C21+23*C23+25*C25+27*C27+29*C29+31*C31+33*C33+35*C35)/(C21+C23+C25+C27+C29+C31+C33+C35),
-    CPI = (C21+C23+C25+C27+C29+C31+C33+C35)/(C20+C22+C24+C26+C28+C30+C32+C34)
+    CPI = (C21+C23+C25+C27+C29+C31+C33+C35)/(C20+C22+C24+C26+C28+C30+C32+C34),
+    C29_ng_total = C29 * mass_mg
   )
 
+readme <- data.frame(readme = c("Units for all individaul compounds and sigmaLCA are:  \u03bcg / g sediment",
+                                "simgaLCA is the sum concentration of all saturated alkanes between C20 and C35",
+                                "lambdaLCA is the same sum (C20 through C35) reported relative to organic carbon in units of \u03bcg / g OC",
+                                "ACL, or average chain length, uses odd-chain alkanes from C21 through C35 and is mass-based (as opposed to molar)",
+                                "CPI, or carbon preference index, is the unitless, mass-based ratio of the sum of odd over even alkanes from C20 through C35",
+                                "C29_ng_total is the ng total amount of C29 present in the extract. Useful for calculating GC-IRMS volumes."))
 
 # Output into an Excel file! Enjoy... :-)
-write_xlsx(data,path="output.xlsx")
+write_xlsx(list(readme=readme,sample_report=data,calibration_summary=calib.sum,calibration_data=calib),path="output.xlsx")
